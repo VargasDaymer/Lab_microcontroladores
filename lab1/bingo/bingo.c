@@ -1,51 +1,25 @@
 #include <pic14/pic12f683.h>
 #include <stdint.h>
 
-#define LFSR_SIZE 16
+#define MAX_NUMEROS 10  //Max de 30.
 
-//Parametrosp p ara num random
- 
-//To compile:
-//sdcc -mpic14 -p16f675 blink.c
- 
-//To program the chip using picp:
-//Assuming /dev/ttyUSB0 is the serial port.
- 
-//Erase the chip:
-//picp /dev/ttyUSB0 16f887 -ef
- 
-//Write the program:
-//picp /dev/ttyUSB0 16f887 -wp blink.hex
- 
-//Write the configuration words (optional):
-//picp /dev/ttyUSB0 16f887 -wc 0x2ff4 0x3fff
- 
-//Doing it all at once: erasing, programming, and reading back config words:
-//picp /dev/ttyUSB0 16f887 -ef -wp blink.hex -rc
- 
-//To program the chip using pk2cmd:
-//pk2cmd -M -PPIC16f887 -Fblink.hex
- 
+unsigned int seed = 512;
+
+//void enviar(uint8_t dato);
+uint8_t fue_utilizado(uint8_t num);
+uint8_t generar_numero_unico();
 void delay (unsigned int tiempo);
 uint16_t rand();
  
-	uint8_t num[10][8] = {
-	{0, 0, 1, 1, 1, 1, 1, 1}, // 0
-	{0, 0, 0, 0, 0, 1, 1, 0}, // 1
-	{0, 1, 0, 1, 1, 0, 1, 1}, // 2
-	{0, 1, 0, 0, 1, 1, 1, 1}, // 3
-	{0, 1, 1, 0, 0, 1, 1, 0}, // 4
-	{0, 1, 1, 0, 1, 1, 0, 1}, // 5
-	{0, 1, 1, 1, 1, 1, 0, 1}, // 6 
-	{0, 0, 0, 0, 0, 1, 1, 1}, // 7
-	{0, 1, 1, 1, 1, 1, 1, 1}, // 8
-	{1, 1, 1, 0, 1, 1, 1, 1}  // 9
-	};
+int cont = 0;
+
+// Numeros en hex para el display.
+uint8_t num[10] = {0xFC, 0x60, 0xDA, 0xF2, 0x66, 0xB6, 0xBE, 0xE0, 0xFE, 0xF7};
+
+uint8_t numeros_usados[MAX_NUMEROS] = {0}; 
 
 void main(void)
 {
-
-
     TRISIO = 0b00001000; //Poner todos los pines como salidas
 	GPIO = 0x00; //Poner pines en bajo
 
@@ -54,70 +28,156 @@ void main(void)
 
 	while (GP3 == 0x00){} //Esperar que el boton se presione.
 		
-	uint8_t num_gen = rand();
-	
-	while (num_gen > 3)
+	uint8_t num_gen = generar_numero_unico();
+
+	uint8_t dato1 = num[num_gen / 10];
+
+	uint8_t dato2 = num[num_gen % 10];
+
+	// Enviar 
+	GP1 = 0x00; //Aceptar en bajo
+
+	for (int i = 0; i < 8; i++)
 	{
-		num_gen = rand();
-		delay(10);
+		int salida = 0;
+
+		salida = dato1 & 0b00000001;
+		dato1 = dato1 >> 1;
+
+
+		GP2 = salida;
+		delay(1);
+		
+		//Enviar flanco.
+		GP0 = 0x01;
+		delay(1);
+		GP0 = 0x00;
+		delay(1);
+		
+	}
+
+	for (int i = 0; i < 8; i++)
+	{
+		int salida = 0;
+
+		salida = dato2 & 0b00000001;
+		dato2 = dato2 >> 1;
+
+
+		GP2 = salida;
+		delay(1);
+		
+		//Enviar flanco.
+		GP0 = 0x01;
+		delay(1);
+		GP0 = 0x00;
+		delay(1);
+		
+	}
+
+	GP1 = 0x01; //Aceptar en alto
+
+	
+
+	if(cont == 10){
+
+	GP1 = 0x00; //Aceptar en bajo
+
+	for (int i = 0; i < 16; i++)
+	{
+		int salida = 0;
+
+		salida =  0xF7F7 & 0b00000001;
+		dato2 = dato2 >> 1;
+
+
+		GP2 = salida;
+		delay(1);
+		
+		//Enviar flanco.
+		GP0 = 0x01;
+		delay(1);
+		GP0 = 0x00;
+		delay(1);
+		
+	}
+
+	GP1 = 0x01; //Aceptar en alto
+
+
 	}
 	
-        
-	for (uint8_t i = 0; i < 8; i++)
-	{
-		uint8_t dato = num[num_gen][i];
-
-		if (dato == 1)
-		{
-			// Colocar 1
-			GP2 = 0xFF;
-			delay(10);
-			GP0 = 0x00;
-			delay(10);
-			GP0 = 0xFF;
-			delay(10);
-		}
-
-		else{
-			// Colocar 0
-			GP2 = 0x00;
-			delay(10);
-			GP0 = 0x00;
-			delay(10);
-			GP0 = 0xFF;
-			delay(10);
-		}
-
-
-	}
-	
-			// Aceptar trama
-			GP1 = 0x00;
-			delay(10);
-			GP1 = 0xFF;
-			delay(10);		
+	cont++;
+		
 }
 
+}
+
+
+
+
+
+//p0 = SHC (Pulsos)(Reloj)
+//p1 = STC (Aceptar)(Latch)
+//p2 = DS  (Select)(Datos)
+
+/****
+//Función enviar
+void enviar(uint8_t dato){
+
+	for (int i = 0; i < 8; i++)
+	{
+		int salida = 0;
+
+		salida = dato & 0b00000001;
+		dato = dato >> 1;
+
+
+		GP2 = salida;
+		delay(1);
+		
+		//Enviar flanco.
+		GP0 = 0x01;
+		delay(1);
+		GP0 = 0x00;
+		delay(1);
+		
 	}
 
 
 
 
-
-//p0 = SHC (Pulsos)
-//p1 = STC (Aceptar)
-//p2 = DS  (Select)
+}
+****/
 
 
+// La función verifica que el número no este dentro del arreglo.
+uint8_t fue_utilizado(uint8_t num) {
 
+    for (int i = 0; i < MAX_NUMEROS; i++) {
+        if (numeros_usados[i] == num) {
+            return 1; // Si el número ya se ha utilizado, retorna 1.
+        }
+    }
+    return 0;
+}
 
+uint8_t generar_numero_unico() {
+    uint8_t num;
+    do {
+        num = rand(); // Genera un número aleatorio.
+    } while (fue_utilizado(num)); // Verifica si ya fue utilizado
 
+    // Registra el número generado
+    for (int i = 0; i < MAX_NUMEROS; i++) {
+        if (numeros_usados[i] == 0) {
+            numeros_usados[i] = num;
+            break;
+        }
+    }
 
-
-
-
-
-
+    return num;
+}
 
 
 void delay(unsigned int tiempo)
@@ -129,18 +189,14 @@ void delay(unsigned int tiempo)
 	  for(j=0;j<1275;j++);
 }
 
-
-
 uint16_t rand()
 {
-    static uint16_t lfsr = 0xACE1u;
-    uint16_t lsb = lfsr & 1; // Bit menos significativo
-    lfsr >>= 1; // Desplazar un bit a la derecha
+    seed = (118 * seed + 455) % 685; // Algoritmo GLC simple
 
-    // Aplicar retroalimentación
-    if (lsb) {
-        lfsr ^= 0xB400u; // Retroalimentación XOR para un LFSR de 16 bits
-    }
-
-    return lfsr & 0x9; // Para limitar el valor al rango 0-10
+    // Escala el número generado al rango de 0 a 9
+    return seed % 100;
 }
+
+
+
+
