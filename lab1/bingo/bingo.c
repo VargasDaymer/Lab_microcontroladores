@@ -45,15 +45,20 @@ void main(void)
 
 	if(cont >= MAX_NUMEROS){ //Si se llega a la cantidad de números repetido se excriben 9.
 
-	dato1 = 0xF7; //Numero 9.
+for (uint8_t i = 0; i < 3; i++)
+{
+	
+	uint16_t dato3 = 0xF7F7; //Numero 99.
+
 	GP1 = 0x00; //Aceptar en bajo
-	for (int i = 0; i < 8; i++)
+
+	for (uint8_t i = 0; i < 16; i++)
 	{
 
-		int salida = 0;
+		uint8_t salida = 0;
 
-		salida =  dato1 & 0b0000000000000001; //Toma el valor el LSB.
-		dato1 = dato1 >> 1; //Desplaza los bits para leer el siguiente.
+		salida =  dato3 & 0b0000000000000001; //Toma el valor el LSB.
+		dato3 = dato3 >> 1; //Desplaza los bits para leer el siguiente.
 
 
 		GP2 = salida; //Coloca el valor an enviar.
@@ -67,17 +72,16 @@ void main(void)
 		
 	}
 
-	dato1 = 0xF7;
-	for (int i = 0; i < 8; i++)
+	GP1 = 0x01; //Aceptar en alto
+
+	delay(100);
+
+	GP1 = 0x00; //Aceptar en bajo
+
+	for (uint8_t i = 0; i < 16; i++)
 	{
 
-		int salida = 0;
-
-		salida =  dato1 & 0b0000000000000001;
-		dato1 = dato1 >> 1;
-
-
-		GP2 = salida;
+		GP2 = 0;
 		delay(1);
 		
 		//Enviar flanco.
@@ -91,14 +95,20 @@ void main(void)
 	GP1 = 0x01; //Aceptar en alto
 	delay(1);
 
+	}
+
+	//Reinicar contador y array de datos enviado.
+	cont = 0;
+	//numeros_usados = {0};
 	
+
 
 	}
 
 	else{ //Si no se ha llegado al numero maximo, imprimir aleatorio.
-			for (int i = 0; i < 8; i++)
+			for (uint8_t i = 0; i < 8; i++)
 	{
-		int salida = 0;
+		uint8_t salida = 0;
 
 		salida = dato1 & 0b00000001;
 		dato1 = dato1 >> 1;
@@ -115,9 +125,9 @@ void main(void)
 		
 	}
 
-	for (int i = 0; i < 8; i++)
+	for (uint8_t i = 0; i < 8; i++)
 	{
-		int salida = 0;
+		uint8_t salida = 0;
 
 		salida = dato2 & 0b00000001;
 		dato2 = dato2 >> 1;
