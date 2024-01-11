@@ -2,7 +2,7 @@
 #include <stdint.h>
 
 //Se define la cantidad de números qeu van a salir sin repetirse.
-#define MAX_NUMEROS 10  //Numero de datos a guardar y numero a mostrar antes de reiniciar.
+#define MAX_NUMEROS 10  //Max de 30.
 
 //Semilla para generar los números pseudoaleatorios.
 uint16_t seed = 512;
